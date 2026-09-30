@@ -15,9 +15,9 @@ function ConvertTo-TdFilter {
     foreach ($w in $Words) {
         if (-not $w) { continue }
         $neg = $false
-        if ($w.Length -gt 1 -and $w.StartsWith('-')) { $neg = $true; $w = $w.Substring(1) }
+        if ($w.Length -gt 1 -and $w.StartsWith('-', [StringComparison]::Ordinal)) { $neg = $true; $w = $w.Substring(1) }
         $f = [pscustomobject]@{ Type = 'text'; Negate = $neg; Key = $null; Op = $null; Value = $w }
-        if ($w.Length -gt 2 -and $w.StartsWith('/') -and $w.EndsWith('/')) {
+        if ($w.Length -gt 2 -and $w.StartsWith('/', [StringComparison]::Ordinal) -and $w.EndsWith('/', [StringComparison]::Ordinal)) {
             $f.Type = 'regex'; $f.Value = $w.Substring(1, $w.Length - 2)
         }
         elseif ($w -match '^\+(\S+)$') { $f.Type = 'project'; $f.Value = $Matches[1] }
@@ -155,7 +155,11 @@ function ConvertTo-TdSortSpec {
 }
 
 function Get-TdFieldKey {
-    <# Sort key for a field; types are consistent per field. #>
+    <#
+      Sort key for a field; types are consistent per field. $null means the
+      value is missing (sorted last). No sentinel characters are used: culture
+      aware comparison in .NET Framework (PS 5.1) ignores control characters.
+    #>
     param($Todo, [string]$Field, $Index)
     switch ($Field) {
         'importance' { return [double](Get-TdImportance $Todo) }
@@ -169,12 +173,12 @@ function Get-TdFieldKey {
         }
         'text' { return $Todo.Text.ToLowerInvariant() }
         'length' { return [double]$Todo.Text.Length }
-        { $_ -eq 'project' -or $_ -eq 'projects' } { if ($Todo.Projects.Count) { return (@($Todo.Projects | Sort-Object)[0]).ToLowerInvariant() } return [string][char]0xFFFF }
-        { $_ -eq 'context' -or $_ -eq 'contexts' } { if ($Todo.Contexts.Count) { return (@($Todo.Contexts | Sort-Object)[0]).ToLowerInvariant() } return [string][char]0xFFFF }
+        { $_ -eq 'project' -or $_ -eq 'projects' } { if ($Todo.Projects.Count) { return (@($Todo.Projects | Sort-Object)[0]).ToLowerInvariant() } return $null }
+        { $_ -eq 'context' -or $_ -eq 'contexts' } { if ($Todo.Contexts.Count) { return (@($Todo.Contexts | Sort-Object)[0]).ToLowerInvariant() } return $null }
         { $_ -eq 'line' -or $_ -eq 'number' -or $_ -eq 'id' } { return [double]$Todo.Number }
         default {
             $v = Get-TdTag $Todo $Field
-            if ($null -eq $v) { return [string][char]0xFFFF }
+            if ($null -eq $v) { return $null }
             return $v.ToLowerInvariant()
         }
     }
@@ -189,11 +193,19 @@ function Sort-TdTodos {
     $wrapped = New-Object System.Collections.Generic.List[object]
     foreach ($t in $arr) {
         $o = @{ T = $t; N = [double]$t.Number }
-        for ($i = 0; $i -lt $spec.Count; $i++) { $o["K$i"] = Get-TdFieldKey $t $spec[$i].Field $Index }
+        for ($i = 0; $i -lt $spec.Count; $i++) {
+            $k = Get-TdFieldKey $t $spec[$i].Field $Index
+            $o["M$i"] = [int]($null -eq $k)
+            if ($null -eq $k) { $k = '' }
+            $o["K$i"] = $k
+        }
         $wrapped.Add([pscustomobject]$o)
     }
     $props = New-Object System.Collections.Generic.List[object]
-    for ($i = 0; $i -lt $spec.Count; $i++) { $props.Add(@{ Expression = "K$i"; Descending = $spec[$i].Descending }) }
+    for ($i = 0; $i -lt $spec.Count; $i++) {
+        $props.Add(@{ Expression = "M$i"; Descending = $false })
+        $props.Add(@{ Expression = "K$i"; Descending = $spec[$i].Descending })
+    }
     $props.Add(@{ Expression = 'N'; Descending = $false })
     $sorted = $wrapped | Sort-Object -Property $props.ToArray()
     return , @($sorted | ForEach-Object { $_.T })
@@ -210,7 +222,7 @@ function Get-TdGroupValues {
         { $_ -eq 'context' -or $_ -eq 'contexts' } {
             foreach ($c in $Todo.Contexts) { $res.Add(@($c.ToLowerInvariant(), "@$c")) }
         }
-        'priority' { if ($Todo.Priority) { $res.Add(@([string](91 - [int][char]$Todo.Priority), "Priority $($Todo.Priority)")) } }
+        'priority' { if ($Todo.Priority) { $res.Add(@($Todo.Priority, "Priority $($Todo.Priority)")) } }
         'due' { if ($null -ne $Todo.Due) { $res.Add(@((Format-TdDate $Todo.Due), "Due $(Get-TdHumanDate $Todo.Due)")) } }
         { $_ -eq 'start' -or $_ -eq 't' } { if ($null -ne $Todo.Start) { $res.Add(@((Format-TdDate $Todo.Start), "Start $(Get-TdHumanDate $Todo.Start)")) } }
         'importance' { $i = Get-TdImportance $Todo; $res.Add(@(('{0:D3}' -f $i), "Importance $i")) }
@@ -229,30 +241,41 @@ function Group-TdTodos {
         return , @([pscustomobject]$all)
     }
     $groups = @{}
+    $order = New-Object System.Collections.Generic.List[object]
     foreach ($t in $Items) {
-        $keys = @(@{ K = ''; L = '' })
+        # each combination: Parts = per level @(missing flag, sort value), L = label
+        $keys = @(@{ Parts = @(); L = '' })
         foreach ($s in $spec) {
             $vals = Get-TdGroupValues $t $s.Field
-            if ($vals.Count -eq 0) { $vals = @(, @([string][char]0xFFFF, "No $($s.Field)")) }
+            $missing = 0
+            if ($vals.Count -eq 0) { $vals = @(, @('', "No $($s.Field)")); $missing = 1 }
             $next = New-Object System.Collections.Generic.List[object]
             foreach ($k in $keys) {
                 foreach ($v in $vals) {
                     $lab = $v[1]
                     if ($k.L) { $lab = "$($k.L), $($v[1])" }
-                    $next.Add(@{ K = $k.K + [char]1 + $v[0]; L = $lab; Parts = $null })
+                    $next.Add(@{ Parts = (@($k.Parts) + , @($missing, $v[0])); L = $lab })
                 }
             }
             $keys = $next.ToArray()
         }
         foreach ($k in $keys) {
-            if (-not $groups.ContainsKey($k.K)) {
-                $groups[$k.K] = @{ Key = $k.K; Label = $k.L; Items = (New-Object System.Collections.Generic.List[object]) }
+            $id = [string]::Join("`n", @($k.Parts | ForEach-Object { "$($_[0])$($_[1])" }))
+            if (-not $groups.ContainsKey($id)) {
+                $g = @{ Label = $k.L; Items = (New-Object System.Collections.Generic.List[object]) }
+                for ($i = 0; $i -lt $k.Parts.Count; $i++) { $g["M$i"] = $k.Parts[$i][0]; $g["V$i"] = $k.Parts[$i][1] }
+                $groups[$id] = $g
+                $order.Add($g)
             }
-            $groups[$k.K].Items.Add($t)
+            $groups[$id].Items.Add($t)
         }
     }
-    $desc = $spec[0].Descending
-    $ordered = @($groups.Values | Sort-Object -Property @{ Expression = { $_.Key }; Descending = $desc } | ForEach-Object { [pscustomobject]$_ })
+    $props = New-Object System.Collections.Generic.List[object]
+    for ($i = 0; $i -lt $spec.Count; $i++) {
+        $props.Add(@{ Expression = "M$i"; Descending = $false })
+        $props.Add(@{ Expression = "V$i"; Descending = $spec[$i].Descending })
+    }
+    $ordered = @($order | ForEach-Object { [pscustomobject]$_ } | Sort-Object -Property $props.ToArray())
     return , $ordered
 }
 
@@ -329,7 +352,7 @@ function Format-TdTodo {
         $i++
         $prefix = ''; $suffix = ''
         if ($Format[$i] -eq '{') {
-            $end = $Format.IndexOf('}', $i)
+            $end = $Format.IndexOf([char]'}', $i)
             if ($end -lt 0) { break }
             $prefix = $Format.Substring($i + 1, $end - $i - 1)
             $i = $end + 1
@@ -338,7 +361,7 @@ function Format-TdTodo {
         $ph = $Format[$i]
         $i++
         if ($i -lt $n -and $Format[$i] -eq '{') {
-            $end = $Format.IndexOf('}', $i)
+            $end = $Format.IndexOf([char]'}', $i)
             if ($end -ge 0) { $suffix = $Format.Substring($i + 1, $end - $i - 1); $i = $end + 1 }
         }
         $val = Get-TdPlaceholder $Todo $ph $IdWidth

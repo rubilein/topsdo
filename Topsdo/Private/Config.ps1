@@ -126,14 +126,14 @@ function ConvertFrom-TdIni {
     foreach ($raw in $Lines) {
         if ($null -eq $raw) { continue }
         $line = $raw.Trim()
-        if ($line -eq '' -or $line.StartsWith('#') -or $line.StartsWith(';')) { continue }
+        if ($line -eq '' -or $line.StartsWith('#', [StringComparison]::Ordinal) -or $line.StartsWith(';', [StringComparison]::Ordinal)) { continue }
         if ($line -match '^\[(.+)\]$') {
             $section = $Matches[1].Trim()
             if (-not $result.Contains($section)) { $result[$section] = New-TdOrderedDict }
             continue
         }
         if ($null -eq $section) { continue }
-        $idx = $line.IndexOf('=', 1)
+        $idx = $line.IndexOf([char]'=', 1)
         if ($idx -lt 1) { continue }
         $key = $line.Substring(0, $idx).Trim()
         $val = $line.Substring($idx + 1).Trim()
@@ -153,7 +153,7 @@ function Resolve-TdPath {
     param([string]$Path)
     if (-not $Path) { return $Path }
     if ($Path -eq '~') { $Path = $HOME }
-    elseif ($Path.StartsWith('~/') -or $Path.StartsWith('~\')) { $Path = Join-Path $HOME $Path.Substring(2) }
+    elseif ($Path.StartsWith('~/', [StringComparison]::Ordinal) -or $Path.StartsWith('~\', [StringComparison]::Ordinal)) { $Path = Join-Path $HOME $Path.Substring(2) }
     $Path = [Environment]::ExpandEnvironmentVariables($Path)
     return $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
 }
@@ -248,8 +248,11 @@ function Get-TdTagName {
 function ConvertTo-TdColor {
     param([string]$Name)
     if (-not $Name) { return $null }
-    $c = [ConsoleColor]::Black
-    if ([Enum]::TryParse([ConsoleColor], $Name.Trim(), $true, [ref]$c)) { return $c }
+    # [Enum]::TryParse(Type, ...) is .NET Core only; this works in PS 5.1 too
+    $n = $Name.Trim()
+    foreach ($c in [Enum]::GetNames([ConsoleColor])) {
+        if ([string]::Equals($c, $n, [StringComparison]::OrdinalIgnoreCase)) { return [ConsoleColor]$c }
+    }
     return $null
 }
 

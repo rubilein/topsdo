@@ -3,7 +3,7 @@
 function Get-TdCompletions {
     <# Completion candidates for the word before the cursor. #>
     param($Ctx, [string]$Before)
-    $start = $Before.LastIndexOf(' ') + 1
+    $start = $Before.LastIndexOf([char]' ') + 1
     $word = $Before.Substring($start)
     $head = $Before.Substring(0, $start).Trim()
     $cands = New-Object System.Collections.Generic.List[string]
@@ -17,10 +17,10 @@ function Get-TdCompletions {
         $list = $null
         try { $list = Get-TdCtxList $Ctx } catch { }
         $firstWord = (Split-TdCommandLine $head)[0]
-        if ($word.StartsWith('+') -and $null -ne $list) {
+        if ($word.StartsWith('+', [StringComparison]::Ordinal) -and $null -ne $list) {
             foreach ($t in $list.Items) { foreach ($p in $t.Projects) { if (-not $cands.Contains("+$p")) { $cands.Add("+$p") } } }
         }
-        elseif ($word.StartsWith('@') -and $null -ne $list) {
+        elseif ($word.StartsWith('@', [StringComparison]::Ordinal) -and $null -ne $list) {
             foreach ($t in $list.Items) { foreach ($c in $t.Contexts) { if (-not $cands.Contains("@$c")) { $cands.Add("@$c") } } }
         }
         elseif ($word -match '^([^\s:]+):') {
