@@ -367,12 +367,12 @@ function Show-TdColumns {
 
     for ($y = 0; $y -lt $H - 1; $y++) {
         $sig = Get-TdRowSignature $rows[$y]
-        if ($Ui.Prev[$y] -ne $sig) { Write-TdScreenRow $y $rows[$y]; $Ui.Prev[$y] = $sig }
+        if (-not [string]::Equals([string]$Ui.Prev[$y], $sig, [StringComparison]::Ordinal)) { Write-TdScreenRow $y $rows[$y]; $Ui.Prev[$y] = $sig }
     }
     # status line: never write the bottom-right cell (it would scroll the console)
     $status = Get-TdStatusSegs $Ui ($W - 1)
     $sig = Get-TdRowSignature $status
-    if ($Ui.Prev[$H - 1] -ne $sig) { Write-TdScreenRow ($H - 1) $status; $Ui.Prev[$H - 1] = $sig }
+    if (-not [string]::Equals([string]$Ui.Prev[$H - 1], $sig, [StringComparison]::Ordinal)) { Write-TdScreenRow ($H - 1) $status; $Ui.Prev[$H - 1] = $sig }
 }
 
 function Show-TdOverlay {
@@ -602,7 +602,7 @@ function Invoke-TdColumnsAction {
     param($Ui, [string]$Action)
     $col = $Ui.Columns[$Ui.Focus]
     $bodyH = [Math]::Max(1, [Console]::WindowHeight - 2)
-    if ($Action.StartsWith('cmd ')) { Invoke-TdColumnsTemplate $Ui $Action.Substring(4).Trim(); return }
+    if ($Action.StartsWith('cmd ', [StringComparison]::Ordinal)) { Invoke-TdColumnsTemplate $Ui $Action.Substring(4).Trim(); return }
     switch ($Action) {
         'up' { Move-TdColumnSelection $col -1 }
         'down' { Move-TdColumnSelection $col 1 }

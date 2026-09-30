@@ -181,6 +181,21 @@ Test-Case 'grouping' {
     Assert-Equal @('+a', '+b', 'No project') @($g | ForEach-Object { $_.Label })
     Assert-Equal 2 $g[0].Items.Count
 }
+Test-Case 'missing values sort and group last (also in PS 5.1)' {
+    $list = [pscustomobject]@{ Items = (New-Object System.Collections.Generic.List[object]) }
+    foreach ($l in @('none', 'zz +zeta', 'aa +alpha')) { $list.Items.Add((New-TdTodo $l)) }
+    Update-TdListIds $list
+    $s = Sort-TdTodos -List $list -Items $list.Items -Expression 'project'
+    Assert-Equal @('aa', 'zz', 'none') @($s | ForEach-Object { ($_.Text -split ' ')[0] })
+    $s = Sort-TdTodos -List $list -Items $list.Items -Expression 'desc:project'
+    Assert-Equal @('zz', 'aa', 'none') @($s | ForEach-Object { ($_.Text -split ' ')[0] })
+    $g = Group-TdTodos @((New-TdTodo '(C) c'), (New-TdTodo 'n'), (New-TdTodo '(A) a'), (New-TdTodo '(B) b')) 'priority'
+    Assert-Equal @('Priority A', 'Priority B', 'Priority C', 'No priority') @($g | ForEach-Object { $_.Label })
+}
+Test-Case 'color names' {
+    Assert-Equal 'DarkCyan' (ConvertTo-TdColor 'darkcyan')
+    Assert-True ($null -eq (ConvertTo-TdColor 'nocolor'))
+}
 Test-Case 'format strings' {
     $t = New-TdTodo '(A) 2026-09-01 Call Bob +family due:2026-10-01 id:4'
     $t.Uid = '7'
