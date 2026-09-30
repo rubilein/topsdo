@@ -1,0 +1,27 @@
+; Example column file for 'topsdo columns' (default location: ~/.topsdo_columns).
+; Every section is one column, in display order.
+;   title       column header
+;   filterexpr  filter words as for 'ls' (see 'topsdo help ls')
+;   sortexpr    sort expression, empty = sort_string from the config
+;   groupexpr   group by project, context, priority, due, start or a tag
+;   show_all    1 = also show completed, blocked, hidden and future items
+
+[today]
+title = Today
+filterexpr = due:<=today
+sortexpr = desc:importance,due
+
+[week]
+title = This week
+filterexpr = due:>today due:<=1w
+sortexpr = due
+
+[work]
+title = Work
+filterexpr = +work
+groupexpr = context
+
+[inbox]
+title = No due date
+filterexpr = due:!
+sortexpr = desc:priority,creation
