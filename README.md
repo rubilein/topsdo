@@ -44,6 +44,43 @@ with `Remove-Alias t` after importing (PowerShell 6+; in 5.1: `Remove-Item Alias
 Windows PowerShell 5.1 may need `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 (or `Unblock-File` on the downloaded files) before scripts can run.
 
+## Setup for daily use
+
+1. **Load `t` in every session** - add the import to your profile:
+
+   ```powershell
+   Add-Content $PROFILE 'Import-Module "C:\path\to\topsdo\Topsdo\Topsdo.psd1"'
+   ```
+
+   (Create the profile first if it does not exist: `New-Item -Force $PROFILE`.)
+
+2. **Use a fixed todo file** instead of `todo.txt` in the current directory - create a
+   config file (Windows: `%APPDATA%\topsdo\config`, Linux/macOS:
+   `~/.config/topsdo/config`):
+
+   ```ini
+   [topsdo]
+   filename = C:\Users\me\OneDrive\todo\todo.txt
+   archive_filename = C:\Users\me\OneDrive\todo\done.txt
+   ```
+
+   ```powershell
+   # Windows
+   New-Item -ItemType Directory -Force "$env:APPDATA\topsdo" | Out-Null
+   notepad "$env:APPDATA\topsdo\config"
+   ```
+
+   [examples/topsdo.conf](examples/topsdo.conf) lists every option with its default value.
+
+3. **Start column mode with useful columns** - copy the example column file
+   (columns "Today", "This week", "Work", "No due date"):
+
+   ```powershell
+   Copy-Item examples\columns "$HOME\.topsdo_columns"
+   ```
+
+   Columns can also be created and changed inside `t columns` (`N`, `E`, `D`, ...).
+
 ## Quick start
 
 ```powershell
