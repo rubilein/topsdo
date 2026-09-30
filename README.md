@@ -6,9 +6,9 @@ A [todo.txt](https://github.com/todotxt/todo.txt) manager for PowerShell, inspir
 
 It has the three topydo interfaces:
 
-- **CLI** – `topsdo add`, `topsdo ls`, `topsdo do 3`, ...
-- **Prompt mode** – `topsdo prompt`: an interactive shell with history and tab completion
-- **Column mode** – `topsdo columns`: a full-screen, keyboard driven view with one column per filter
+- **CLI** – `t add`, `t ls`, `t do 3`, ...
+- **Prompt mode** – `t prompt`: an interactive shell with history and tab completion
+- **Column mode** – `t columns`: a full-screen, keyboard driven view with one column per filter
 
 Features: priorities, projects, contexts, due (`due:`) and start dates (`t:`) with relative
 dates, recurrence (`rec:1w`, strict `rec:+1m`), dependencies (`id:`/`p:` with `before:`,
@@ -24,17 +24,22 @@ cd topsdo
 ./topsdo.ps1 help
 ```
 
-To use `topsdo` from anywhere, import the module (e.g. in your `$PROFILE`):
+To use it from anywhere, import the module (e.g. in your `$PROFILE`). It provides the
+short command **`t`** (and the long form `topsdo`):
 
 ```powershell
 Import-Module /path/to/topsdo/Topsdo/Topsdo.psd1
-topsdo ls
+t ls
 ```
 
 or copy the `Topsdo` folder into a directory from `$env:PSModulePath`
 (e.g. `~\Documents\PowerShell\Modules` / `~\Documents\WindowsPowerShell\Modules` /
 `~/.local/share/powershell/Modules`). On Linux/macOS `topsdo.ps1` can be run directly
-(`chmod +x`), from `cmd.exe` use `topsdo.cmd`.
+(`chmod +x`); for the short command link the `t` wrapper into your PATH:
+`ln -s /path/to/topsdo/t ~/.local/bin/t`. From `cmd.exe` use `t.cmd` (or `topsdo.cmd`).
+
+If `t` collides with an alias or function of your own, use `topsdo` or remove the alias
+with `Remove-Alias t` after importing (PowerShell 6+; in 5.1: `Remove-Item Alias:t`).
 
 Windows PowerShell 5.1 may need `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 (or `Unblock-File` on the downloaded files) before scripts can run.
@@ -42,20 +47,20 @@ Windows PowerShell 5.1 may need `Set-ExecutionPolicy -Scope CurrentUser RemoteSi
 ## Quick start
 
 ```powershell
-topsdo add '(A) Call Bob about the offer @phone +sales due:tomorrow'
-topsdo add 'Write report +work due:fri t:wed'
-topsdo add 'Collect numbers +work partof:2'   # subtask of todo 2
-topsdo add 'Water plants rec:3d'
-topsdo ls
-topsdo ls +work -g context
-topsdo do 1
-topsdo postpone 2 1w
-topsdo revert
+t add '(A) Call Bob about the offer @phone +sales due:tomorrow'
+t add 'Write report +work due:fri t:wed'
+t add 'Collect numbers +work partof:2'   # subtask of todo 2
+t add 'Water plants rec:3d'
+t ls
+t ls +work -g context
+t do 1
+t postpone 2 1w
+t revert
 ```
 
 > **PowerShell quoting:** `@`, `(`, `)`, `<`, `>`, `,` and `{}` mean something to the
 > PowerShell parser. Quote todo text and filter expressions that contain them:
-> `topsdo add '(A) Call @home'`, `topsdo ls 'due:<=today'`. The prompt mode has no such
+> `t add '(A) Call @home'`, `t ls 'due:<=today'`. The prompt mode has no such
 > restrictions.
 
 The todo file is `todo.txt` in the current directory unless configured otherwise
@@ -148,14 +153,14 @@ due date.
 ## Prompt mode
 
 ```
-topsdo prompt
+t prompt
 topsdo> add (A) Call Bob @phone due:fri
 topsdo> ls +work
 topsdo> do 3
 topsdo> exit
 ```
 
-Commands are entered without the `topsdo` prefix and without PowerShell quoting rules
+Commands are entered without the `t` prefix and without PowerShell quoting rules
 (single/double quotes group words). Keys: `Tab` completes commands, `+projects`,
 `@contexts` and dates after `due:`/`t:`; `Up`/`Down` history (saved in
 `~/.topsdo_history`); `Ctrl+A/E/U/K/W`; `Esc` clears the line; `exit`, `quit` or `Ctrl+D`
@@ -166,7 +171,7 @@ input the prompt reads commands line by line, e.g.
 ## Column mode
 
 ```
-topsdo columns [-l COLUMN_FILE]
+t columns [-l COLUMN_FILE]
 ```
 
 Every column is a saved view (filter, sort, grouping). Columns are read from
@@ -228,8 +233,8 @@ top = ls -n {}
   `Importance`, ...):
   `Get-TopsdoItem '+work' | Where-Object Due -lt (Get-Date).AddDays(3)`
 - Output piped into another command is plain text (no colors):
-  `topsdo ls | Select-String report`. Use `-C 0` when redirecting with `>`.
-- `topsdo ls -f json | ConvertFrom-Json` for structured data.
+  `t ls | Select-String report`. Use `-C 0` when redirecting with `>`.
+- `t ls -f json | ConvertFrom-Json` for structured data.
 - `$LASTEXITCODE` is 1 when a command failed.
 
 ## Tests

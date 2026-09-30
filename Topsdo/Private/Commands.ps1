@@ -500,7 +500,7 @@ function Invoke-TdCmdHelp {
     }
     Write-TdOut $Ctx 'topsdo - a todo.txt manager for PowerShell (inspired by topydo)'
     Write-TdOut $Ctx ''
-    Write-TdOut $Ctx 'Usage: topsdo [-c CONFIG] [-t TODO.TXT] [-d DONE.TXT] [-C 0|1] [-v] <command> [args]'
+    Write-TdOut $Ctx 'Usage: t [-c CONFIG] [-t TODO.TXT] [-d DONE.TXT] [-C 0|1] [-v] <command> [args]'
     Write-TdOut $Ctx ''
     Write-TdOut $Ctx 'Commands:'
     foreach ($k in $script:TdCommands.Keys) {
@@ -508,7 +508,7 @@ function Invoke-TdCmdHelp {
     }
     Write-TdOut $Ctx ''
     Write-TdOut $Ctx "Run 'help <command>' for details. In PowerShell, quote arguments containing"
-    Write-TdOut $Ctx "@, (, ), < or > - e.g. topsdo add '(A) Call Bob @phone due:fri'."
+    Write-TdOut $Ctx "@, (, ), < or > - e.g. t add '(A) Call Bob @phone due:fri'."
 }
 
 function Invoke-TdCmdVersion {
@@ -625,7 +625,7 @@ Options (may also follow the expression; '--' ends options):
     pri      = @{ Fn = 'Invoke-TdCmdPri'; Mutating = $true; Summary = 'Set priority'; Usage = 'pri <ID>... <PRIORITY>'; Help = 'Sets the priority (A-Z) of the given todos.' }
     prompt   = @{ Fn = 'Invoke-TdCmdPrompt'; Mutating = $false; Summary = 'Start the interactive prompt mode'
         Usage = 'prompt'
-        Help = "Interactive shell: enter commands without the 'topsdo' prefix and without`nPowerShell quoting. Tab completes commands, projects, contexts and dates;`nUp/Down browse history. 'exit', 'quit' or Ctrl+D leave."
+        Help = "Interactive shell: enter commands without the 't' prefix and without`nPowerShell quoting. Tab completes commands, projects, contexts and dates;`nUp/Down browse history. 'exit', 'quit' or Ctrl+D leave."
     }
     revert   = @{ Fn = 'Invoke-TdCmdRevert'; Mutating = $false; Summary = 'Undo the last change'; Usage = 'revert [ls]'; Help = "Restores the state before the last modifying command.`n'revert ls' lists the available backups (backup_count)." }
     sort     = @{ Fn = 'Invoke-TdCmdSort'; Mutating = $true; Summary = 'Sort the todo file'; Usage = 'sort [EXPRESSION]'; Help = 'Sorts the todo file permanently (default: sort_string).' }

@@ -10,7 +10,7 @@
     FunctionsToExport    = @('Invoke-Topsdo', 'Invoke-TopsdoCli', 'Get-TopsdoItem')
     CmdletsToExport      = @()
     VariablesToExport    = @()
-    AliasesToExport      = @('topsdo')
+    AliasesToExport      = @('t', 'topsdo')
     PrivateData          = @{
         PSData = @{
             Tags       = @('todo', 'todotxt', 'todo.txt', 'topydo', 'productivity', 'tui')

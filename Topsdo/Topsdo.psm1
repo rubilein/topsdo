@@ -58,13 +58,13 @@ function Invoke-TopsdoCli {
 function Invoke-Topsdo {
     <#
     .SYNOPSIS
-      topsdo - todo.txt manager inspired by topydo (alias: topsdo).
+      topsdo - todo.txt manager inspired by topydo (aliases: t, topsdo).
     .DESCRIPTION
-      Usage: topsdo [-c CONFIG] [-t TODO.TXT] [-d DONE.TXT] [-C 0|1] <command> [args]
-      Run 'topsdo help' for the list of commands, 'topsdo prompt' for the
-      interactive prompt and 'topsdo columns' for the column mode.
+      Usage: t [-c CONFIG] [-t TODO.TXT] [-d DONE.TXT] [-C 0|1] <command> [args]
+      Run 't help' for the list of commands, 't prompt' for the
+      interactive prompt and 't columns' for the column mode.
       Quote arguments containing @ ( ) < > so PowerShell passes them unchanged:
-        topsdo add '(A) Call Bob @phone due:fri'
+        t add '(A) Call Bob @phone due:fri'
     #>
     # No param block on purpose: every word (also -x style options) ends up in $args.
     $piped = $MyInvocation.PipelinePosition -lt $MyInvocation.PipelineLength
@@ -110,5 +110,7 @@ function Get-TopsdoItem {
     }
 }
 
+# 't' is the short everyday command, 'topsdo' the long form.
+Set-Alias -Name t -Value Invoke-Topsdo
 Set-Alias -Name topsdo -Value Invoke-Topsdo
-Export-ModuleMember -Function Invoke-Topsdo, Invoke-TopsdoCli, Get-TopsdoItem -Alias topsdo
+Export-ModuleMember -Function Invoke-Topsdo, Invoke-TopsdoCli, Get-TopsdoItem -Alias t, topsdo
