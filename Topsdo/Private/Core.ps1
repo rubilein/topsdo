@@ -18,6 +18,7 @@ function New-TdContext {
         Color       = $useColor
         ExitCode    = 0
         Ui          = $null
+        ArchivePending = $false
         Emitted     = (New-Object System.Collections.Generic.List[string])
     }
 }
@@ -282,7 +283,11 @@ function Invoke-TdCommand {
         $null = & $cmd.Fn $Ctx $argv
         if ($cmd.Mutating) {
             $list = Get-TdCtxList $Ctx
-            if ($cmd.Archive -and (Get-TdOptBool 'topsdo' 'archive' $true)) { [void](Invoke-TdArchive $Ctx) }
+            if ($cmd.Archive -and (Get-TdOptBool 'topsdo' 'archive' $true)) {
+                # prompt mode archives on exit so the ids shown by the last ls stay valid
+                if ($Ctx.Mode -eq 'prompt' -and (Get-TdOptBool 'topsdo' 'prompt_defer_archive' $true)) { $Ctx.ArchivePending = $true }
+                else { [void](Invoke-TdArchive $Ctx) }
+            }
             if ($list.Dirty) { Save-TdList $list }
         }
     }

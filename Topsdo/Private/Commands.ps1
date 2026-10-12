@@ -419,6 +419,7 @@ function Invoke-TdCmdSort {
 function Invoke-TdCmdArchive {
     param($Ctx, [string[]]$Argv)
     $n = Invoke-TdArchive $Ctx
+    $Ctx.ArchivePending = $false
     Write-TdOut $Ctx "Archived $n completed todo(s) to $($Ctx.DonePath)."
 }
 
@@ -584,7 +585,8 @@ Marks todos as completed. Recurring todos (rec:1w, rec:+1m) create a new
 instance. -d sets the completion date (relative dates allowed), -s makes
 the recurrence strict (based on the old due date instead of today), -f does
 not ask about unfinished subtasks. -e completes all todos matching the
-expression. Completed todos are archived when archive = 1.
+expression. Completed todos are archived when archive = 1 (in prompt mode
+only on exit when prompt_defer_archive = 1, so the ids stay stable).
 '@
     }
     edit     = @{ Fn = 'Invoke-TdCmdEdit'; Mutating = $true; Summary = 'Edit todos in a text editor'
