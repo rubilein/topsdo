@@ -359,6 +359,25 @@ Test-Case 'prompt completion' {
     Assert-Equal @('@home') (Get-TdCompletions $ctx 'add x @h').Items
     Assert-True ((Get-TdCompletions $ctx 'add x due:to').Items -contains 'due:today')
 }
+Test-Case 'prompt mode defers archiving so ids stay stable' {
+    $ctx = New-TestContext @('a', 'b', 'c')
+    $ctx.Mode = 'prompt'
+    [void](Invoke-Test $ctx 'do 1')
+    [void](Invoke-Test $ctx 'do 2')
+    Assert-Equal @('x 2026-09-30 a', 'x 2026-09-30 b', 'c') (Get-TestFile $ctx)
+    Assert-True $ctx.ArchivePending
+    Assert-Equal @('Archived 2 completed todo(s) to ' + $ctx.DonePath + '.') (Invoke-Test $ctx 'archive')
+    Assert-Equal @('c') (Get-TestFile $ctx)
+    Assert-True (-not $ctx.ArchivePending)
+}
+Test-Case 'prompt_defer_archive = 0 archives after every do' {
+    $ctx = New-TestContext @('a', 'b', 'c') "prompt_defer_archive = 0"
+    $ctx.Mode = 'prompt'
+    [void](Invoke-Test $ctx 'do 1')
+    [void](Invoke-Test $ctx 'do 2')
+    Assert-Equal @('b') (Get-TestFile $ctx)
+    Assert-True (-not $ctx.ArchivePending)
+}
 
 & $module { foreach ($d in $script:TestDirs) { Remove-Item -LiteralPath $d -Recurse -Force -ErrorAction SilentlyContinue } }
 

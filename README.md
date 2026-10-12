@@ -205,6 +205,13 @@ leave. `columns` switches to column mode and returns afterwards. With redirected
 input the prompt reads commands line by line, e.g.
 `Get-Content cmds.txt | pwsh -NoProfile -File topsdo.ps1 prompt`.
 
+Completed todos are archived to `done.txt` only when you leave the prompt (`exit`, `quit`,
+`Ctrl+D`), not after every `do`. The ids printed by `ls` therefore stay valid for the whole
+session: `do 3` followed by `do 5` completes exactly the items shown as 3 and 5. `ls` hides
+completed items anyway, `archive` moves them right away. Set `prompt_defer_archive = 0` to
+archive after every `do` as on the command line. Column mode always archives immediately;
+its view refreshes after every command, so the shown ids are always current.
+
 ## Column mode
 
 ```
@@ -282,6 +289,15 @@ powershell -NoProfile -File tests/Run-Tests.ps1   # Windows PowerShell 5.1
 ```
 
 The test runner has no dependencies (no Pester required).
+
+## FAQ
+
+**After `do` the next id points at the wrong todo.** With `identifiers = linenumber` the id
+is the line number in `todo.txt`. Archiving (`archive = 1`) or `del` removes lines, so every
+todo below moves up by one. On the command line, run `ls` again after such a command or
+complete several todos at once (`do 3 5`). The prompt defers archiving until exit (see
+[Prompt mode](#prompt-mode)), so only `del` shifts ids there. Position-independent ids:
+`identifiers = text` (a short hash of the todo text; it changes when you edit that todo).
 
 ## Differences to topydo
 

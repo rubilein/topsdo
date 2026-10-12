@@ -81,6 +81,10 @@ function Start-TdPrompt {
         }
         Send-TdOutput $Ctx
     }
+    if ($Ctx.ArchivePending) {
+        Invoke-TdCommand $Ctx @('archive')
+        Send-TdOutput $Ctx
+    }
     if ($interactive) {
         try {
             $keep = @($history | Select-Object -Last 500)
